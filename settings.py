@@ -3,12 +3,12 @@ from pathlib import Path
 
 BASE_DIR = Path(__file__).resolve().parent
 
-# في الإنتاج على Azure، يجب أن تكون هذه القيم آتية من متغيرات البيئة
-SECRET_KEY = os.environ.get('DJANGO_SECRET_KEY', 'django-insecure-zero-library-project-key')
+SECRET_KEY = os.environ.get('DJANGO_SECRET_KEY', 'default-unsafe-key')
 DEBUG = os.environ.get('DJANGO_DEBUG', 'False').lower() in ('true', '1', 'yes')
 
-# قراءة الـ Hosts المسموح بها من متغيرات البيئة (مهم جداً لـ Azure App Service و Front Door)
-ALLOWED_HOSTS = os.environ.get('ALLOWED_HOSTS', '*').split(',')
+# قراءة النطاقات المسموحة من ملف البيئة
+_allowed_hosts = os.environ.get('ALLOWED_HOSTS', '*')
+ALLOWED_HOSTS = [host.strip() for host in _allowed_hosts.split(',')]
 
 INSTALLED_APPS = [
     'django.contrib.admin',
@@ -18,12 +18,11 @@ INSTALLED_APPS = [
     'django.contrib.messages',
     'django.contrib.staticfiles',
     'library',
-    'storages', # تمت إضافة مكتبة التخزين للتعامل مع سحابة Azure
 ]
 
 MIDDLEWARE = [
     'django.middleware.security.SecurityMiddleware',
-    'whitenoise.middleware.WhiteNoiseMiddleware', # لمعالجة الملفات الثابتة Static بكفاءة
+    'whitenoise.middleware.WhiteNoiseMiddleware',
     'django.contrib.sessions.middleware.SessionMiddleware',
     'django.middleware.common.CommonMiddleware',
     'django.middleware.csrf.CsrfViewMiddleware',
@@ -37,14 +36,11 @@ ROOT_URLCONF = 'urls'
 DATABASES = {
     'default': {
         'ENGINE': 'django.db.backends.postgresql',
-        'NAME': os.environ.get('DB_NAME', 'rsu_db'),
-        'USER': os.environ.get('DB_USER', 'rsu_user'),
-        'PASSWORD': os.environ.get('DB_PASSWORD', 'rsu_password'),
-        'HOST': os.environ.get('DB_HOST', 'localhost'),
-        'PORT': os.environ.get('DB_PORT', '5432'),
-        'OPTIONS': {
-            'sslmode': 'require', # ضروري جداً للاتصال بقاعدة بيانات Azure المدارة
-        },
+        'NAME': os.environ.get('DB_NAME'),
+        'USER': os.environ.get('DB_USER'),
+        'PASSWORD': os.environ.get('DB_PASSWORD'),
+        'HOST': os.environ.get('DB_HOST'),
+        'PORT': os.environ.get('DB_PORT'),
     }
 }
 
@@ -70,40 +66,28 @@ TIME_ZONE = 'Africa/Khartoum'
 USE_I18N = True
 USE_TZ = True
 
-# إعدادات الملفات الثابتة (Static Files - CSS/JS/Images)
 STATIC_URL = 'static/'
-STATIC_ROOT = os.path.join(BASE_DIR, 'staticfiles')
+STATIC_ROOT = os.path.join(BASE_DIR, 'static')
 DEFAULT_AUTO_FIELD = 'django.db.models.BigAutoField'
 AUTH_USER_MODEL = 'library.User'
 
-DATA_UPLOAD_MAX_MEMORY_SIZE = 157286400  # 150 MB
-FILE_UPLOAD_MAX_MEMORY_SIZE = 157286400  # 150 MB
+DATA_UPLOAD_MAX_MEMORY_SIZE = 157286400
+FILE_UPLOAD_MAX_MEMORY_SIZE = 157286400
 
-SESSION_COOKIE_AGE = 1800  # 30 minutes
+SESSION_COOKIE_AGE = 1800
 SESSION_EXPIRE_AT_BROWSER_CLOSE = True
 
-# إعدادات ملفات الميديا (الكتب المرفوعة) - تم التعديل لدعم سحابة Azure
-USE_AZURE_STORAGE = os.environ.get('USE_AZURE_STORAGE', 'False').lower() == 'true'
-
-if USE_AZURE_STORAGE:
-    # إعدادات التخزين على Azure Blob Storage
-    DEFAULT_FILE_STORAGE = 'storages.backends.azure_storage.AzureStorage'
-    AZURE_ACCOUNT_NAME = os.environ.get('AZURE_ACCOUNT_NAME')
-    AZURE_ACCOUNT_KEY = os.environ.get('AZURE_ACCOUNT_KEY')
-    AZURE_CONTAINER = os.environ.get('AZURE_CONTAINER', 'media')
-    MEDIA_URL = f'https://{AZURE_ACCOUNT_NAME}.blob.core.windows.net/{AZURE_CONTAINER}/'
-else:
-    # يعمل محلياً إذا لم يتم تفعيل Azure Storage
-    MEDIA_URL = '/media/'
-    MEDIA_ROOT = os.path.join(BASE_DIR, 'media')
+MEDIA_URL = '/media/'
+MEDIA_ROOT = os.path.join(BASE_DIR, 'media')
 
 LOGIN_URL = 'login'
 LOGIN_REDIRECT_URL = 'home'
 
-# إعدادات الحماية خلف Azure Front Door أو Reverse Proxy
+# إعدادات الحماية و HTTPS
 _origins = os.environ.get('CSRF_TRUSTED_ORIGINS', '')
 CSRF_TRUSTED_ORIGINS = [x.strip() for x in _origins.split(',') if x.strip()]
 SESSION_COOKIE_SAMESITE = 'Lax'
 CSRF_COOKIE_SAMESITE = 'Lax'
 USE_X_FORWARDED_HOST = True
 SECURE_PROXY_SSL_HEADER = ('HTTP_X_FORWARDED_PROTO', 'https')
+SECURE_SSL_REDIRECT = True
