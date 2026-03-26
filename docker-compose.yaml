@@ -2,9 +2,43 @@ version: '3.8'
 
 services:
   web:
-    # في Azure لا يمكن استخدام build: . بل يجب تحديد مسار الصورة المرفوعة
-    image: <your-azure-container-registry-name>.azurecr.io/library-app:latest
+    build: .
+    volumes:
+      - static_volume:/app/static
+      - media_volume:/app/media
+    env_file:
+      - .env
+    depends_on:
+      - db
+    restart: unless-stopped
+
+  db:
+    image: postgres:13
+    volumes:
+      - postgres_data:/var/lib/postgresql/data
+    environment:
+      - POSTGRES_DB=${DB_NAME}
+      - POSTGRES_USER=${DB_USER}
+      - POSTGRES_PASSWORD=${DB_PASSWORD}
+    restart: unless-stopped
+
+  nginx:
+    image: nginx:latest
     ports:
-      - "8000:8000"
-    # يتم إلغاء الـ volumes المحلية لأننا سنعتمد على التخزين السحابي
-    restart: always
+      - "80:80"
+      - "443:443"
+    volumes:
+      - ./nginx.conf:/etc/nginx/conf.d/default.conf:ro
+      - static_volume:/app/static
+      - media_volume:/app/media
+      # نربط شهادات السيرفر الأساسي بالنجينكس
+      - /etc/letsencrypt:/etc/letsencrypt:ro
+      - /var/www/certbot:/var/www/certbot
+    depends_on:
+      - web
+    restart: unless-stopped
+
+volumes:
+  postgres_data:
+  static_volume:
+  media_volume:
