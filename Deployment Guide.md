@@ -13,7 +13,7 @@ sudo certbot certonly --standalone -d eng-zero-library.duckdns.org
 قم برفع مجلد مشروعك (الذي يحتوي على جميع الملفات التي عدلناها أعلاه) إلى السيرفر.
 (يمكنك استخدام git clone أو scp).
 
-
+## اعد ضبت متغيرات البيئة في ملف .env
 ```
 sudo docker-compose up -d --build
 
