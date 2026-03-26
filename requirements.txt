@@ -1,9 +1,5 @@
-
 Django>=4.2,<5
 psycopg2-binary>=2.9
 gunicorn>=21
 Pillow>=9.0.0
 whitenoise==6.4.0
-django-storages[azure]>=1.13
-azure-storage-blob>=12.19.0
-
