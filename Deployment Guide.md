@@ -2,7 +2,7 @@
 
 ```
 sudo apt update && sudo apt upgrade -y
-sudo apt install docker.io docker-compose certbot -y
+sudo apt install docker.io docker-compose-plugin certbot -y
 ```
 
 ## (تأكد إنك حدثت الـ IP في موقع DuckDNS قبل تنفيذ هذا الأمر)
